@@ -1,4 +1,4 @@
-# Automated Invoice Processing System
+# Automated Invoice Processing Application
 
 This project is a web application designed to automate the extraction and processing of data from multiple PDF invoices. Utilizing Tesseract OCR, PyPDF2, and Google Generative AI, this system captures and organizes invoice details into structured formats, making it ideal for large-scale enterprises to manage their invoices efficiently.
 
