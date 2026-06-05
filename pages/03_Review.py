@@ -14,23 +14,6 @@ passed = [inv for inv in invoices if not inv.needs_review]
 
 tab1, tab2 = st.tabs(["⚠️ Needs Review", "✅ Auto-Passed"])
 
-with tab1:
-    if not flagged:
-        st.success("All invoices passed validation! 🎉")
-    else:
-        st.write(f"{len(flagged)} invoice(s) flagged for review.")
-        for idx, inv in enumerate(flagged):
-            _render_invoice_card(inv, idx, needs_review=True)
-
-with tab2:
-    if not passed:
-        st.info("No auto-passed invoices.")
-    else:
-        st.write(f"{len(passed)} invoice(s) passed automatically.")
-        for idx, inv in enumerate(passed):
-            _render_invoice_card(inv, idx, needs_review=False)
-
-
 def _render_invoice_card(inv: Invoice, idx: int, needs_review: bool):
     with st.expander(
         f"{'⚠️' if needs_review else '✅'} "
@@ -91,5 +74,21 @@ def _render_invoice_card(inv: Invoice, idx: int, needs_review: bool):
             inv.confidence = 1.0
             st.success(f"{inv.scan_id} approved!")
             st.rerun()
+
+with tab1:
+    if not flagged:
+        st.success("All invoices passed validation! 🎉")
+    else:
+        st.write(f"{len(flagged)} invoice(s) flagged for review.")
+        for idx, inv in enumerate(flagged):
+            _render_invoice_card(inv, f"f_{idx}", needs_review=True)
+
+with tab2:
+    if not passed:
+        st.info("No auto-passed invoices.")
+    else:
+        st.write(f"{len(passed)} invoice(s) passed automatically.")
+        for idx, inv in enumerate(passed):
+            _render_invoice_card(inv, f"p_{idx}", needs_review=False)
 
 st.page_link("pages/04_Export.py", label="→ Export Data", icon="💾")

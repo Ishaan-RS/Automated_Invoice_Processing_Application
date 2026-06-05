@@ -1,10 +1,20 @@
 import streamlit as st
 import os
-from werkzeug.utils import secure_filename
+import re
 
 from utils.ocr import pdf_to_images, load_image, extract_text_pypdf2, resize_for_model
 from utils.extraction import extract_invoice_from_image
 from utils.validation import validate_invoice, find_duplicates
+
+
+def secure_filename(filename):
+    """Simple secure filename implementation without werkzeug dependency"""
+    # Remove any path separators
+    filename = os.path.basename(filename)
+    # Keep only alphanumeric, dots, hyphens, and underscores
+    filename = re.sub(r'[^\w\-_.]', '_', filename)
+    # Limit length
+    return filename[:255]
 
 UPLOAD_FOLDER = "uploads"
 

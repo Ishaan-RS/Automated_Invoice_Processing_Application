@@ -17,7 +17,7 @@ erp_df = to_erp_csv(invoices)
 json_str = to_json(invoices)
 
 st.subheader("Preview")
-st.dataframe(summary_df, use_container_width=True, hide_index=True)
+st.dataframe(summary_df, width='stretch', hide_index=True)
 
 st.subheader("Download Options")
 
@@ -30,7 +30,7 @@ with col1:
         data=csv_data,
         file_name="invoiceiq_export.csv",
         mime="text/csv",
-        use_container_width=True,
+        width='stretch',
     )
 
 with col2:
@@ -40,7 +40,7 @@ with col2:
         data=json_bytes,
         file_name="invoiceiq_export.json",
         mime="application/json",
-        use_container_width=True,
+        width='stretch',
     )
 
 with col3:
@@ -50,7 +50,7 @@ with col3:
         data=erp_csv_data,
         file_name="invoiceiq_erp_export.csv",
         mime="text/csv",
-        use_container_width=True,
+        width='stretch',
     )
 
 st.divider()
@@ -78,5 +78,5 @@ if invoices:
             data=f,
             file_name="invoiceiq_export.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
+            width='stretch',
         )

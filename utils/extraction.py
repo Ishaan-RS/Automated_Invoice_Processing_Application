@@ -27,7 +27,7 @@ def extract_invoice_from_image(image: Image.Image, filename: str, fallback_text:
         try:
             img_b64 = _pil_to_base64(image)
             response = ollama.chat(
-                model="phi3:vision",
+                model="llava:7b",
                 messages=[{
                     "role": "user",
                     "content": VISION_PROMPT,

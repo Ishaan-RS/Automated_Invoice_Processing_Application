@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   ollama:
     image: ollama/ollama:latest
@@ -9,12 +7,14 @@ services:
     volumes:
       - ollama_data:/root/.ollama
     restart: unless-stopped
-    entrypoint: ["sh", "-c", "ollama pull phi3:vision && ollama serve"]
+    environment:
+      - OLLAMA_HOST=0.0.0.0:11434
     healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 30s
-      timeout: 30s
-      retries: 5
+      test: ["CMD", "curl", "-f", "http://localhost:11434/api/tags"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
 
   app:
     build: .
@@ -27,8 +27,7 @@ services:
     environment:
       - OLLAMA_HOST=http://ollama:11434
     depends_on:
-      ollama:
-        condition: service_healthy
+      - ollama
     restart: unless-stopped
 
 volumes:

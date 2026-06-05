@@ -34,7 +34,7 @@ chart = alt.Chart(chart_df).mark_bar().encode(
     color=alt.Color("Status:N", scale=alt.Scale(domain=["✅ Pass", "⚠️ Review"], range=["#27ae60", "#f39c12"])),
     tooltip=["Invoice", "Confidence", "Status"],
 ).properties(height=400)
-st.altair_chart(chart, use_container_width=True)
+st.altair_chart(chart, width='stretch')
 
 st.subheader("Invoice Details")
 display_cols = [
@@ -42,6 +42,6 @@ display_cols = [
     "Invoice Total", "Confidence", "Needs Review", "Validation Errors"
 ]
 view_df = df[display_cols]
-st.dataframe(view_df, use_container_width=True, hide_index=True)
+st.dataframe(view_df, width='stretch', hide_index=True)
 
 st.page_link("pages/03_Review.py", label="→ Review Queue", icon="🔍")
