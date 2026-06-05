@@ -1,6 +1,10 @@
+import base64
+import io
 import json
-import re
 import logging
+import re
+
+from PIL import Image
 
 from models.invoice import Invoice, LineItem
 
@@ -13,44 +17,38 @@ except ImportError:
     OLLAMA_AVAILABLE = False
     logger.warning("ollama Python package not installed. Using fallback extraction only.")
 
-EXTRACTION_PROMPT = """
-Extract invoice fields from the text below. Return ONLY valid JSON with:
-- "country": string
-- "bill_to_name": string
-- "currency": string (3-letter code)
-- "invoice_date": string (DD-MM-YYYY)
-- "invoice_number": string
-- "invoice_total": number or null
-- "po_number": string (starting with PO if present)
-- "net_amount": number or null
-- "tax_rate": number or null (percentage)
-- "tax_amount": number or null
-- "vendor_address": string
-- "vendor_email": string
-- "vendor_name": string
-- "line_items": array of {"description": string, "quantity": number|null, "unit_price": number|null, "total": number|null}
-- "confidences": object with same keys mapping to 0.0-1.0 confidence
+VISION_PROMPT = """Extract all invoice data from this image. Return ONLY valid JSON.
 
-Invoice text:
-{text}
-"""
+Fields: vendor_name, vendor_address, vendor_email, bill_to_name, invoice_number, invoice_date (DD-MM-YYYY), po_number, currency (3-letter code), net_amount (number or null), tax_rate (number or null, percentage), tax_amount (number or null), invoice_total (number or null), country, line_items (array of {"description", "quantity", "unit_price", "total"}), confidences (object with same keys, values 0.0-1.0)"""
 
 
-def extract_invoice(text: str, filename: str) -> Invoice:
-    if OLLAMA_AVAILABLE and text.strip():
+def extract_invoice_from_image(image: Image.Image, filename: str, fallback_text: str = "") -> Invoice:
+    if OLLAMA_AVAILABLE:
         try:
+            img_b64 = _pil_to_base64(image)
             response = ollama.chat(
-                model="phi3:mini",
-                messages=[{"role": "user", "content": EXTRACTION_PROMPT.format(text=text[:8000])}],
+                model="phi3:vision",
+                messages=[{
+                    "role": "user",
+                    "content": VISION_PROMPT,
+                    "images": [img_b64],
+                }],
             )
             content = response["message"]["content"]
             content = _clean_json(content)
             data = json.loads(content)
         except Exception as e:
-            logger.warning(f"Ollama extraction failed for {filename}: {e}")
-            data = _fallback_extract(text)
+            logger.warning(f"Vision extraction failed for {filename}: {e}")
+            if fallback_text.strip():
+                data = _fallback_extract(fallback_text)
+            else:
+                data = {}
     else:
-        data = _fallback_extract(text)
+        if fallback_text.strip():
+            data = _fallback_extract(fallback_text)
+        else:
+            logger.error("Ollama unavailable and no fallback text provided")
+            data = {}
 
     inv = Invoice(
         scan_id=filename,
@@ -77,6 +75,13 @@ def extract_invoice(text: str, filename: str) -> Invoice:
         inv.confidence = sum(scores) / len(scores) if scores else 1.0
 
     return inv
+
+
+def _pil_to_base64(image: Image.Image) -> str:
+    buf = io.BytesIO()
+    image.save(buf, format="PNG")
+    buf.seek(0)
+    return base64.b64encode(buf.read()).decode("utf-8")
 
 
 def _clean_json(content: str) -> str:

@@ -12,7 +12,7 @@ Upload invoice PDFs or scans → extract vendor + line-item data → validate to
 InvoiceIQ is not just an OCR script. It's a **document operations platform** that:
 
 - Runs **fully locally** — no API keys, no data leaving your machine
-- Combines **OCR + local LLM** for structured extraction
+- Uses **Phi-3 Vision** (VLM) for end-to-end extraction from images
 - Validates business rules (totals, tax, duplicates) automatically
 - Provides a **human-in-the-loop review queue** for edge cases
 - Exports **ERP-ready structured data** (JSON, CSV, Excel)
@@ -24,8 +24,7 @@ InvoiceIQ is not just an OCR script. It's a **document operations platform** tha
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Streamlit (multi-page dashboard) |
-| OCR | Tesseract 5 |
-| Extraction | Ollama + local LLM (Phi-3 / Mistral) |
+| OCR + Extraction | Ollama + Phi-3 Vision (end-to-end) |
 | Validation | Python rule engine (heuristic) |
 | Export | Pandas → Excel / CSV / JSON |
 | Containerization | Docker + Docker Compose |
@@ -35,10 +34,10 @@ InvoiceIQ is not just an OCR script. It's a **document operations platform** tha
 ## Architecture
 
 ```
-┌─────────────┐    ┌──────────┐    ┌───────────────┐    ┌────────────┐
-│  Upload PDF │───▶│ Tesseract│───▶│  Ollama LLM   │───▶│ Validation │
-│  / Image    │    │   OCR    │    │  (Phi-3)      │    │  Engine    │
-└─────────────┘    └──────────┘    └───────────────┘    └─────┬──────┘
+┌─────────────┐    ┌──────────────────┐    ┌────────────┐
+│  Upload PDF │───▶│  Ollama Phi-3    │───▶│ Validation │
+│  / Image    │    │  Vision (VLM)    │    │  Engine    │
+└─────────────┘    └──────────────────┘    └─────┬──────┘
                                                               │
                     ┌─────────────────────────────────────────┘
                     ▼
@@ -83,8 +82,8 @@ InvoiceIQ is not just an OCR script. It's a **document operations platform** tha
 
 | # | Task | Est. Time | Status |
 |---|------|-----------|--------|
-| 3.1 | Install Ollama, pull Phi-3 / Mistral model | 20 min | ⬜ |
-| 3.2 | Replace Gemini API call with Ollama Python client | 30 min | ⬜ |
+| 3.1 | Install Ollama, pull Phi-3 Vision model | 20 min | ⬜ |
+| 3.2 | Replace Gemini + Tesseract with Phi-3 Vision (image→JSON) | 30 min | ⬜ |
 | 3.3 | Update prompt for structured JSON output (fields + confidence) | 20 min | ⬜ |
 | 3.4 | Add line-item extraction (description, qty, unit price, total) | 20 min | ⬜ |
 
@@ -125,7 +124,7 @@ InvoiceIQ is not just an OCR script. It's a **document operations platform** tha
 ```bash
 # Option 1: Local
 pip install -r requirements.txt
-ollama pull phi3:mini
+ollama pull phi3:vision
 streamlit run app.py
 
 # Option 2: Docker
@@ -147,7 +146,7 @@ docker-compose up --build
 ## Why This Stands Out
 
 - **Useful:** Invoice automation is a real-world pain point
-- **Modern:** OCR + layout-aware extraction (not regex scraping)
+- **Modern:** Vision LM extraction (not regex scraping)
 - **Private:** Fully local — no data leaves your machine
 - **Productized:** Review workflows, auditability, ERP exports
 - **Deployable:** Dockerized full pipeline — not a Jupyter notebook
