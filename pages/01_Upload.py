@@ -2,8 +2,8 @@ import streamlit as st
 import os
 import re
 
-from utils.ocr import pdf_to_images, load_image, extract_text_pypdf2, resize_for_model
-from utils.extraction import extract_invoice_from_image
+from utils.ocr import pdf_to_images, load_image, extract_text_pypdf2, resize_for_model, is_text_clean
+from utils.extraction import extract_invoice_from_image, extract_invoice_from_text, regex_extract_invoice_from_text
 from utils.validation import validate_invoice, find_duplicates
 
 
@@ -29,23 +29,34 @@ def process_file(uploaded_file):
     ext = os.path.splitext(filename)[1].lower()
     if ext == ".pdf":
         with open(filepath, "rb") as f:
-            images = pdf_to_images(f)
-        with open(filepath, "rb") as f:
             fallback_text = extract_text_pypdf2(f)
+        if is_text_clean(fallback_text):
+            inv = regex_extract_invoice_from_text(fallback_text, filename)
+            inv.raw_text = fallback_text
+            inv.extraction_method = "regex"
+        else:
+            with open(filepath, "rb") as f:
+                images = pdf_to_images(f)
+            if not images:
+                st.error("No pages found in document")
+                return None
+            img = resize_for_model(images[0])
+            inv = extract_invoice_from_image(img, filename, fallback_text)
+            inv.raw_text = fallback_text
+            inv.extraction_method = "vision"
     elif ext in (".png", ".jpg", ".jpeg", ".tiff", ".bmp"):
         with open(filepath, "rb") as f:
             images = [load_image(f)]
-        fallback_text = ""
+        if not images:
+            st.error("No pages found in document")
+            return None
+        img = resize_for_model(images[0])
+        inv = extract_invoice_from_image(img, filename, "")
+        inv.extraction_method = "vision"
     else:
         st.error(f"Unsupported file type: {ext}")
         return None
 
-    if not images:
-        st.error("No pages found in document")
-        return None
-
-    img = resize_for_model(images[0])
-    inv = extract_invoice_from_image(img, filename, fallback_text)
     inv = validate_invoice(inv)
     return inv
 

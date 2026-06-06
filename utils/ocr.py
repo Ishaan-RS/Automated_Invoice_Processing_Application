@@ -20,6 +20,20 @@ def load_image(file_stream) -> Image.Image:
     return Image.open(file_stream).copy()
 
 
+def is_text_clean(text: str) -> bool:
+    if len(text.strip()) < 50:
+        return False
+    invoice_keywords = ["invoice", "total", "date", "vendor", "amount", "tax", "bill", "po "]
+    text_lower = text.lower()
+    keyword_count = sum(1 for kw in invoice_keywords if kw in text_lower)
+    if keyword_count < 2:
+        return False
+    printable = sum(c.isprintable() for c in text)
+    if printable / max(len(text), 1) < 0.8:
+        return False
+    return True
+
+
 def extract_text_pypdf2(file_stream) -> str:
     all_text = ""
     reader = PyPDF2.PdfReader(file_stream)

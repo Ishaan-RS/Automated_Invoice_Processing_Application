@@ -1,5 +1,7 @@
 import streamlit as st
 from models.invoice import Invoice
+from utils.extraction import extract_invoice_from_text
+from utils.validation import validate_invoice
 
 st.header("🔍 Review Queue")
 
@@ -23,6 +25,9 @@ def _render_invoice_card(inv: Invoice, idx: int, needs_review: bool):
     ):
         if inv.validation_errors:
             st.error(" | ".join(inv.validation_errors))
+
+        method_labels = {"regex": "🔤 Regex", "text_llm": "🤖 AI (Text)", "vision": "👁️ Vision"}
+        st.caption(f"Extraction method: {method_labels.get(inv.extraction_method, inv.extraction_method)}")
 
         col1, col2 = st.columns(2)
 
@@ -74,6 +79,18 @@ def _render_invoice_card(inv: Invoice, idx: int, needs_review: bool):
             inv.confidence = 1.0
             st.success(f"{inv.scan_id} approved!")
             st.rerun()
+
+        if inv.extraction_method == "regex" and inv.raw_text:
+            if st.button(f"🤖 Re-extract with AI", key=f"reextract_{idx}"):
+                upgraded = extract_invoice_from_text(inv.raw_text, inv.scan_id)
+                upgraded.approved = inv.approved
+                upgraded.raw_text = inv.raw_text
+                upgraded.extraction_method = "text_llm"
+                upgraded = validate_invoice(upgraded)
+                idx_in_list = next(i for i, x in enumerate(st.session_state.invoices) if x.scan_id == inv.scan_id)
+                st.session_state.invoices[idx_in_list] = upgraded
+                st.success(f"{inv.scan_id} re-extracted with AI!")
+                st.rerun()
 
 with tab1:
     if not flagged:

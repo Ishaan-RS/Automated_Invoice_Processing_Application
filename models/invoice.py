@@ -32,6 +32,8 @@ class Invoice:
     field_confidences: dict = field(default_factory=dict)
     validation_errors: list = field(default_factory=list)
     approved: bool = False
+    raw_text: str = ""
+    extraction_method: str = "regex"
 
     def to_dict(self):
         d = asdict(self)
